@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#Install and run ComfyUI with rocm6.2 for AMD GPU on Ubuntu 24.04
+
+target_dir="/home/$SUDO_USER/Comfy111I"
+comfyui_repo=https://github.com/comfyanonymous/ComfyUI.git
+
 script_name="$(basename $0)"
 log="/var/log/$script_name.log"
 script_dir="$(dirname $(realpath "$0"))"
@@ -23,24 +28,24 @@ if ! crontab -l | grep $script > /dev/null 2>&1; then
 fi
 
 check_pack_man() {
-    if command -v nala >/dev/null 2>&1; then
-        pack_manager=nala
-        pack_update=$("sudo "$pack_manager" update"; "sudo "$pack_manager" upgrade -y")
-        pack_install="$pack_manager install"
-    elif command -v apt >/dev/null 2>&1; then
+    if command -v apt >/dev/null 2>&1; then
         pack_manager=apt
-        pack_update=$("sudo "$pack_manager" update"; "sudo "$pack_manager" upgrade -y")
+        pack_update() {
+            sudo "$pack_manager update"; sudo "$pack_manager" upgrade -y
+        }
         pack_install="$pack_manager install"
     elif command -v pacman >/dev/null 2>&1; then
         pack_manager=pacman 
-        pack_update=$(sudo "$pack_manager" -Syu)
+        pack_update() {
+            sudo "$pack_manager" -Syu
+        }
         pack_install="$pack_manager -S"
     fi
+    pack_update
 }
 
 check_pack_man
 
-$pack_update
 
 install_dependencies() {
     dependencies=(
@@ -123,20 +128,23 @@ install_rocm() {
 
 install_comfyui() {
     if rocminfo | grep "GPU" > /dev/null 2>&1; then
-    echo "Ready to rocm 'n roll"
+        echo "Ready to rocm 'n roll"
     else
-    echo "rocm install Error, no GPU found"
+        echo "rocm error, no GPU found"
     fi
-    
-    target_dir="/home/$SUDO_USER/Comfy11I"
-    comfy_repo=https://github.com/comfyanonymous/ComfyUI.git
 
     #clone comfy repository
     if  ! -d "$target_dir/.git"; then
-        git clone "$comfy_repo" "$target_dir" 
+        git clone "$comfyui_repo" "$target_dir" 
         echo "Repository already cloned in $target_dir"
     else
         echo "Comfy repo has already been cloned"
+    fi
+
+    #install comfy-manager
+    if ! -d "$target_dir/custom_nodes/ComfyUI-Manager" > /dev/null 2>&1; then
+        mkdir "$target_dir/custom_nodes/ComfyUI-Manager"
+        git clone "https://github.com/ltdrdata/ComfyUI-Manager.git" "$target_dir/custom_nodes/ComfyUI-Manager"
     fi
 
 
@@ -157,7 +165,7 @@ install_comfyui() {
 
     #activate virtual environment
     if [[ "$VIRTUAL_ENV" != "" ]]; then
-        echo "Virtual environment is active"
+        echo "Virtual environment is already active"
     else
         echo "Activating virtual environment"
         source "$target_dir/venv/bin/activate"
@@ -175,7 +183,7 @@ install_comfyui() {
 launch_comfyui() {
     #activate virtual environment
     if [[ "$VIRTUAL_ENV" != "" ]]; then
-        echo "Virtual environment is active"
+        echo "Virtual environment is already active"
     else
         echo "Activating virtual environment"
         source "$target_dir/venv/bin/activate"
@@ -189,10 +197,21 @@ launch_comfyui() {
 
     python "$target_dir/main.py" --listen "$listen_ip" --port 8188 --use-quad-cross-attention --output-directory "$target_dir/raw"
 }
+
 install_rocm
+
 install_comfyui
-# Change ownership of the target directory to non-root user
-sudo chown -R $SUDO_USER:$SUDO_USER "$target_dir"
-echo "Ownership changed to $SUDO_USER"
+
+
+#set owner to non-root user
+if ls -lR $target_dir | grep root > /dev/null 2>&1; then
+    sudo chown -R $SUDO_USER:$SUDO_USER "$target_dir"
+    echo "Ownership changed to $SUDO_USER"
+fi
+#set permissions
+if find "$target_dir" ! -perm 0777 | grep . > /dev/null 2>&1; then
+sudo chmod -R 0777 "$target_dir"
+echo "Full permissions granted for all items in $target_dir"
+fi
 
 launch_comfyui
