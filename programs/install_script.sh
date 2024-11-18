@@ -28,7 +28,7 @@ install_bitwarden() {
     
     if ! snap info $program | grep "installed" 2>&1 >/dev/null
     then
-        echo "Installing $program" && sleep 2
+        echo "Installing $program"
         sudo snap install $program && $program & >> $log
         echo "$program installed"
     else
@@ -36,11 +36,24 @@ install_bitwarden() {
     fi  
 }
 
+install_celluloid() {
+    program=celluloid
+
+    if ! command -v $program 2>&1 >/dev/null
+    then
+        echo "Installing $program"
+        sudo $pack_manager install $program -y >> $log
+        echo "$program installed"
+    else
+        echo "$program is already installed"
+    fi
+}
+
 install_nala() {
     program=nala
     if ! command -v $program 2>&1 >/dev/null 
     then
-        echo "Installing $program" && sleep 2
+        echo "Installing $program"
 
         sudo $pack_manager install $program -y >> $log
         echo "$program installed"
@@ -54,7 +67,7 @@ install_nfs-server() {
 
     if ! systemctl status nfs-server | grep "CPU" 2>&1 >/dev/null 
     then
-        echo "Installing $program" && sleep 2
+        echo "Installing $program"
         sudo $pack_manager install $program -y >> $log
         sudo mkdir /nfs
         echo "$program installed"
@@ -68,7 +81,7 @@ install_private-internet-access() {
 
     if ! sudo ls -R / | grep piavpn 2>&1 >/dev/null
     then
-        echo "Installing $program" && sleep 2
+        echo "Installing $program"
         wget https://installers.privateinternetaccess.com/download/pia-linux-3.6.1-08339.run && chmod +x *pia-linux*.run && ./pia-linux*.run >> $log
         rm pia-linux*.run
     else
@@ -81,7 +94,7 @@ install_tailscale() {
     program=tailscale
     if ! command -v $program 2>&1 >/dev/null
     then
-        echo "Installing $program" && sleep 2
+        echo "Installing $program"
         curl -fsSL https://tailscale.com/install.sh | sh >> $log
         tailscale status
     else
@@ -95,7 +108,7 @@ install_vivaldi() {
 
     if ! command -v $program 2>&1 >/dev/null 
     then
-        echo "Installing $program" && sleep 2
+        echo "Installing $program"
         wget https://downloads.vivaldi.com/stable/vivaldi-stable_7.0.3495.15-1_amd64.deb && sudo dpkg -i ./*vivaldi-stable*.deb >> $log
         rm *vivaldi-stable*.deb
         echo "$program installed"
@@ -105,7 +118,7 @@ install_vivaldi() {
 }
 
 install_everything() {
-    echo "Installing all listed programs" && sleep 2
+    echo "Installing all listed programs"
     install_bitwarden
     install_nala
     install_nfs-server
