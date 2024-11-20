@@ -189,6 +189,7 @@ install_everything() {
     install_private-internet-access
     install_tailscale
     install_vivaldi
+    ./comfy-rocm.sh
 }
 
 change_wallpaper() {
@@ -219,7 +220,7 @@ running=1
 
 while [ $running -ne 0 ]
 do   
-    check_pack-man
+    check_package-man
 
     echo "What would you like to install?"
     echo "1 - All listed programs"

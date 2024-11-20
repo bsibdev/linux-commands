@@ -3,7 +3,13 @@
 #Install and run ComfyUI with rocm6.2 for AMD GPU on Ubuntu 24.04
 #Only tested for Ubuntu 24.04; other versions and distros might be missing dependencies
 
-target_dir="/home/$SUDO_USER/Comfy111I"
+if [ "$EUID" -ne 0 ]; then
+    user=$USER
+else
+    user=$SUDO_USER
+fi
+
+target_directory="/home/$user/Comfy_oldI"
 comfyui_repo=https://github.com/comfyanonymous/ComfyUI.git
 
 script_name="$(basename $0)"
@@ -187,30 +193,30 @@ install_comfyui() {
     fi
 
     #clone comfy repository
-    if  ! -d "$target_dir/.git"; then
-        git clone "$comfyui_repo" "$target_dir" 
-        echo "Repository already cloned in $target_dir"
+    if  ! -d "$target_directory/.git"; then
+        git clone "$comfyui_repo" "$target_directory" 
+        echo "Repository already cloned in $target_directory"
     else
         echo "Comfy repo has already been cloned"
     fi
 
     #install comfy-manager
-    if ! -d "$target_dir/custom_nodes/ComfyUI-Manager" > /dev/null 2>&1; then
-        mkdir "$target_dir/custom_nodes/ComfyUI-Manager"
-        git clone "https://github.com/ltdrdata/ComfyUI-Manager.git" "$target_dir/custom_nodes/ComfyUI-Manager"
+    if ! -d "$target_directory/custom_nodes/ComfyUI-Manager" > /dev/null 2>&1; then
+        mkdir "$target_directory/custom_nodes/ComfyUI-Manager"
+        git clone "https://github.com/ltdrdata/ComfyUI-Manager.git" "$target_directory/custom_nodes/ComfyUI-Manager"
     fi
 
 
     #create subfolder in output
-    if ! -d "$target_dir/raw" > /dev/null 2>&1; then
-        echo "Creating $target_dir/raw"
-        mkdir -p "$target_dir/raw"
+    if ! -d "$target_directory/raw" > /dev/null 2>&1; then
+        echo "Creating $target_directory/raw"
+        mkdir -p "$target_directory/raw"
     fi
 
     #create virtual environment
-    if ! -d "$target_dir/venv" > /dev/null 2>&1; then
+    if ! -d "$target_directory/venv" > /dev/null 2>&1; then
         echo "Creating virtual environment."
-        python3 -m venv "$target_dir/venv"
+        python3 -m venv "$target_directory/venv"
     else
         echo "Virtual environment already exists."
     fi
@@ -221,15 +227,15 @@ install_comfyui() {
         echo "Virtual environment is already active"
     else
         echo "Activating virtual environment"
-        source "$target_dir/venv/bin/activate"
+        source "$target_directory/venv/bin/activate"
     fi
 
-    if ! ls -R $target_dir/venv/lib/python3.12/site-packages | grep torch.py > /dev/null 2>&1 || ! ls -R $target_dir/venv/lib/python3.12/site-packages | grep rocm > /dev/null 2>&1; then
+    if ! ls -R $target_directory/venv/lib/python3.12/site-packages | grep torch.py > /dev/null 2>&1 || ! ls -R $target_directory/venv/lib/python3.12/site-packages | grep rocm > /dev/null 2>&1; then
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
     fi
 
 
-    (pip install -r "$target_dir/requirements.txt")
+    (pip install -r "$target_directory/requirements.txt")
 
 }
 
@@ -239,7 +245,7 @@ launch_comfyui() {
         echo "Virtual environment is already active"
     else
         echo "Activating virtual environment"
-        source "$target_dir/venv/bin/activate"
+        source "$target_directory/venv/bin/activate"
     fi
 
     if tailscale ip | grep 100 > /dev/null 2>&1; then
@@ -248,7 +254,7 @@ launch_comfyui() {
         listen_ip=$(hostname -I | awk '{print $1}')
     fi
 
-    python "$target_dir/main.py" --listen "$listen_ip" --port 8188 --use-quad-cross-attention --output-directory "$target_dir/raw"
+    python "$target_directory/main.py" --listen "$listen_ip" --port 8188 --use-quad-cross-attention --output-directory "$target_directory/raw"
 }
 
 install_rocm
@@ -257,14 +263,14 @@ install_comfyui
 
 
 #set owner to non-root user
-if ls -lR $target_dir | grep root > /dev/null 2>&1; then
-    sudo chown -R $SUDO_USER:$SUDO_USER "$target_dir"
+if ls -lR $target_directory | grep root > /dev/null 2>&1; then
+    sudo chown -R $SUDO_USER:$SUDO_USER "$target_directory"
     echo "Ownership changed to $SUDO_USER"
 fi
 #set permissions
-if find "$target_dir" ! -perm 0777 | grep . > /dev/null 2>&1; then
-sudo chmod -R 0777 "$target_dir"
-echo "Full permissions granted for all items in $target_dir"
+if find "$target_directory" ! -perm 0777 | grep . > /dev/null 2>&1; then
+sudo chmod -R 0777 "$target_directory"
+echo "Full permissions granted for all items in $target_directory"
 fi
 
 launch_comfyui
