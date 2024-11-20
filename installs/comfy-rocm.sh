@@ -46,7 +46,8 @@ check_pack_man
 
 update_packages() {
     local log_file
-    local time_limit=$((12 * 60 * 60)) # 12 hours in seconds
+    local hours=12
+    local time_limit=$(($hours * 60 * 60)) # hours in seconds
     local last_update
     local last_update_time
     local current_time=$(date +%s)
@@ -68,7 +69,8 @@ update_packages() {
     case $pack_manager in
         apt)
             log_file="/var/log/apt/history.log"
-            last_update=$(grep -E "Start-Date: *apt upgrade -y" "$log_file" | tail -1 | awk '{print $2, $3}')
+            last_update=$(grep -E "Start-Date:*
+             Commandline:*upgrade -y" "$log_file" | tail -1 | awk '{print $2, $3}')
             ;;
         pacman)
             log_file="/var/log/pacman.log"
@@ -88,10 +90,10 @@ update_packages() {
     else
         last_update_time=$(date -d "$last_update" +%s)
         if [ $(($current_time - $last_update_time)) -ge $time_limit ]; then
-            echo "Last package update is more than 12 hours old... updating now"
+            echo "Last packages upgrade is more than $hours hours old... running upgrade now"
             pack_update
         else
-            echo "Package update detected within the last 12 hours. Skipping"
+            echo "Packages already upgraded within the last $hours hours. Skipping"
         fi
     fi
 }

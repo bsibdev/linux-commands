@@ -1,26 +1,91 @@
 #!/bin/bash
 
-log=./install_script.log
+script_name="$(basename $0)"
+log="/var/log/$script_name.log"
+script_directory="$(dirname $(realpath "$0"))"
+script_absolute_path="$(realpath "$0")"
+standard_script_directory="/usr/local/bin"
+script="$standard_script_directory/$script_name"
 
-check_pack-man() {
-    if command -v nala 2>&1 >/dev/null
-    then
-        pack_manager=nala
-        pack_update="sudo $pack_manager update && sudo $pack_manager upgrade -y >> $log"
-        pack_install="$pack_manager install"
-    elif command -v apt 2>&1 >/dev/null
-    then
+
+#save script outputs to log
+$(exec > >(tee -a "$log") 2>&1)
+
+#copy script to standard location
+if [ "$script_directory" != "$standard_script_directory" ] ; then
+    sudo cp -f "$script_absolute_path" "$standard_script_directory"
+    echo "$script_name copied to $standard_script_directory"
+fi
+
+check_pack_man() {
+    if command -v apt >/dev/null 2>&1; then
         pack_manager=apt
-        pack_update="sudo $pack_manager update && sudo $pack_manager upgrade -y >> $log" 
-        pack_install=$pack_manager install
-    elif command -v pacman 2>&1 >/dev/null
-    then
+        pack_install="$pack_manager install"
+    elif command -v pacman >/dev/null 2>&1; then
         pack_manager=pacman 
-        pack_update="sudo $pack_manager -Syu >> $log"
-        pack_install=$pack_manager -S
+        pack_install="$pack_manager -S"
     fi
 }
 
+check_pack_man
+
+
+
+update_packages() {
+    local log_file
+    local hours=12
+    local time_limit=$(($hours * 60 * 60)) # hours in seconds
+    local last_update
+    local last_update_time
+    local current_time=$(date +%s)
+
+    pack_update() {
+        case $pack_manager in
+            apt)
+                sudo apt update; sudo apt upgrade -y
+                ;;
+            pacman)
+                sudo pacman -Syu
+                ;;
+            *)
+                echo "No package manager set for $script_name"
+                exit 1
+        esac
+    }
+
+    case $pack_manager in
+        apt)
+            log_file="/var/log/apt/history.log"
+            last_update=$(grep -E "Start-Date:*
+             Commandline:*upgrade -y" "$log_file" | tail -1 | awk '{print $2, $3}')
+            ;;
+        pacman)
+            log_file="/var/log/pacman.log"
+            last_update=$(grep -E "\[ALPM\] upgraded" "$log_file" | tail -1 | awk '{print $1, $2}')
+            ;;
+        *)
+            echo "No package manager set for $script_name"
+            exit 1
+    esac
+
+    if [ ! -f "$log_file" ]; then
+        echo "Package installer log file not found... updating now"
+        pack_update
+    elif [ -z "$last_update" ]; then
+        echo "No last update found in log file... updating now"
+        pack_update
+    else
+        last_update_time=$(date -d "$last_update" +%s)
+        if [ $(($current_time - $last_update_time)) -ge $time_limit ]; then
+            echo "Last packages upgrade is more than $hours hours old... running upgrade now"
+            pack_update
+        else
+            echo "Packages already upgraded within the last $hours hours. Skipping"
+        fi
+    fi
+}
+
+update_packages
 
 
 install_bitwarden() {
@@ -87,7 +152,6 @@ install_private-internet-access() {
     else
         echo "$program is already installed"
     fi
-
 }
 
 install_tailscale() {
@@ -147,7 +211,7 @@ change_wallpaper() {
 
 
 check_pack-man
-eval $pack_update
+update_packages
 
 echo ""
 
@@ -165,8 +229,9 @@ do
     echo "5 - Private Internet Access"
     echo "6 - Tailscale"
     echo "7 - Vivaldi Web Browser"
-    echo "8 - exit menu"
+    echo "8 - Rocm + ComfyUI"
     echo "9 - update"
+    echo "10 - exit menu"
 
     read program;
     
@@ -178,8 +243,9 @@ do
         5)install_private-internet-access;;
         6)install_tailscale;;
         7)install_vivaldi;;
-        8)running=0;;
-        9)eval $pack_update;;
+        8)./comfy-rocm.sh;;
+        9)update_packages;;
+        10)running=0;;
         *)echo "Invalid input"
     esac
 done
