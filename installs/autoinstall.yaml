@@ -1,0 +1,25 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-server
+    username: user
+    password:   # Replace with a hashed password
+  ssh:
+    install-server: true
+  storage:
+    layout:
+      name: lvm
+  locale: en_US
+  keyboard:
+    layout: us
+  network:
+    network:
+      version: 2
+      ethernets:
+        eth0:
+          dhcp4: true
+  user-data:
+    disable_root: false
+  late-commands:
+    - curtin in-target --target=/target -- apt-get install -y openssh-server
