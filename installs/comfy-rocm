@@ -9,7 +9,7 @@ else
     user=$SUDO_USER
 fi
 
-target_directory="/home/$user/Comfy_oldI"
+target_directory="/home/$user/Comfy_UI"
 comfyui_repo=https://github.com/comfyanonymous/ComfyUI.git
 
 script_name="$(basename $0)"
@@ -31,7 +31,7 @@ fi
 
 #launch script on boot
 if ! crontab -l | grep $script > /dev/null 2>&1; then
-    (crontab -l  ; echo "@reboot $script") | crontab -
+    (crontab -l  ; echo "@reboot sleep 5;$script") | crontab -
     echo "$script_name added to crontab, and will now launch on boot"
     echo "use 'crontab -e' to edit crontab"
 fi
@@ -170,7 +170,7 @@ install_rocm() {
         fi
     done
 
-    if [ ${#libraries_to_install[@]} -gt 0 ]; then
+    if [ ${libraries_to_install[@]} -gt 0 ]; then
         sudo $pack_install ${libraries_to_install[@]} -y
         sudo usermod -aG render,video $user
 
@@ -195,7 +195,7 @@ install_comfyui() {
     fi
 
     #clone comfy repository
-    if  ! -d "$target_directory/.git"; then
+    if  ! -d "$target_directory/.git" > /dev/null 2>&1; then
         git clone "$comfyui_repo" "$target_directory" 
         echo "Repository already cloned in $target_directory"
     else
