@@ -130,7 +130,7 @@ install_nala() {
 install_nfs-server() {
     program=nfs-kernel-server
 
-    if ! systemctl status nfs-server | grep "CPU" > /dev/null 2>&1  
+    if ! command -v nfs > /dev/null 2>&1  
     then
         echo "Installing $program"
         sudo $pack_manager install $program -y
@@ -192,7 +192,7 @@ install_everything() {
     install_private-internet-access
     install_tailscale
     install_vivaldi
-    ./comfy-rocm.sh
+    ./comfy-rocm
 
 }
 
@@ -248,7 +248,7 @@ do
         5)install_private-internet-access;;
         6)install_tailscale;;
         7)install_vivaldi;;
-        8)./comfy-rocm.sh;;
+        8)./comfy-rocm;;
         9)pack_update;;
         10)running=0;;
         *)echo "Invalid input"
