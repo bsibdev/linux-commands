@@ -155,9 +155,13 @@ install_private-internet-access() {
 
 install_tailscale() {
     program=tailscale
-    if ! command -v $program > /dev/null 2>&1 
+    if ! command -v $program  | grep 100* > /dev/null 2>&1 
     then
         echo "Installing $program"
+        if ! command -v curl > /dev/null 2>&1
+        then
+            sudo $pack_manager install curl -y
+        fi
         curl -fsSL https://tailscale.com/install.sh | sh
         tailscale status
     else
@@ -189,6 +193,7 @@ install_everything() {
     install_tailscale
     install_vivaldi
     ./comfy-rocm.sh
+
 }
 
 change_wallpaper() {

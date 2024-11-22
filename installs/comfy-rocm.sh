@@ -250,7 +250,7 @@ launch_comfyui() {
         source "$target_directory/venv/bin/activate"
     fi
 
-    if tailscale ip | grep 100 > /dev/null 2>&1; then
+    if tailscale status | grep 100* > /dev/null 2>&1; then
         listen_ip=$(tailscale ip | grep 100)
     else
         listen_ip=$(hostname -I | awk '{print $1}')
