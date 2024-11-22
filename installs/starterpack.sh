@@ -9,7 +9,7 @@ script="$standard_script_directory/$script_name"
 
 
 #save script outputs to log
-$(exec > >(tee -a "$log") 2>&1)
+exec > >(sudo tee -a "$log") 2>&1
 
 #copy script to standard location
 if [ "$script_directory" != "$standard_script_directory" ] ; then
@@ -91,10 +91,10 @@ update_packages
 install_bitwarden() {
     program=bitwarden
     
-    if ! snap info $program | grep "installed" 2>&1 >/dev/null
+    if ! snap info $program | grep "installed" > /dev/null 2>&1 
     then
         echo "Installing $program"
-        sudo snap install $program && $program & >> $log
+        sudo snap install $program && $program &
         echo "$program installed"
     else
         echo "$program is already installed"
@@ -104,10 +104,10 @@ install_bitwarden() {
 install_celluloid() {
     program=celluloid
 
-    if ! command -v $program 2>&1 >/dev/null
+    if ! command -v $program > /dev/null 2>&1 
     then
         echo "Installing $program"
-        sudo $pack_manager install $program -y >> $log
+        sudo $pack_manager install $program -y
         echo "$program installed"
     else
         echo "$program is already installed"
@@ -116,11 +116,11 @@ install_celluloid() {
 
 install_nala() {
     program=nala
-    if ! command -v $program 2>&1 >/dev/null 
+    if ! command -v $program > /dev/null 2>&1  
     then
         echo "Installing $program"
 
-        sudo $pack_manager install $program -y >> $log
+        sudo $pack_manager install $program -y
         echo "$program installed"
     else
         echo "$program is already installed"
@@ -130,10 +130,10 @@ install_nala() {
 install_nfs-server() {
     program=nfs-kernel-server
 
-    if ! systemctl status nfs-server | grep "CPU" 2>&1 >/dev/null 
+    if ! systemctl status nfs-server | grep "CPU" > /dev/null 2>&1  
     then
         echo "Installing $program"
-        sudo $pack_manager install $program -y >> $log
+        sudo $pack_manager install $program -y
         sudo mkdir /nfs
         echo "$program installed"
     else
@@ -144,11 +144,10 @@ install_nfs-server() {
 install_private-internet-access() {
     program=piavpn
 
-    if ! sudo ls -R / | grep piavpn 2>&1 >/dev/null
+    if ! sudo ls -R / | grep piavpn > /dev/null 2>&1 
     then
         echo "Installing $program"
-        wget https://installers.privateinternetaccess.com/download/pia-linux-3.6.1-08339.run && chmod +x *pia-linux*.run && ./pia-linux*.run >> $log
-        rm pia-linux*.run
+        wget https://installers.privateinternetaccess.com/download/pia-linux-3.6.1-08339.run && sudo chmod +x pia-linux*.run && ./pia-linux*.run; rm pia-linux*.run
     else
         echo "$program is already installed"
     fi
@@ -156,10 +155,10 @@ install_private-internet-access() {
 
 install_tailscale() {
     program=tailscale
-    if ! command -v $program 2>&1 >/dev/null
+    if ! command -v $program > /dev/null 2>&1 
     then
         echo "Installing $program"
-        curl -fsSL https://tailscale.com/install.sh | sh >> $log
+        curl -fsSL https://tailscale.com/install.sh | sh
         tailscale status
     else
         echo "$program is already isntalled"
@@ -170,10 +169,10 @@ install_vivaldi() {
     program=vivaldi-stable
 
 
-    if ! command -v $program 2>&1 >/dev/null 
+    if ! command -v $program > /dev/null 2>&1  
     then
         echo "Installing $program"
-        wget https://downloads.vivaldi.com/stable/vivaldi-stable_7.0.3495.15-1_amd64.deb && sudo dpkg -i ./*vivaldi-stable*.deb >> $log
+        wget https://downloads.vivaldi.com/stable/vivaldi-stable_7.0.3495.15-1_amd64.deb && sudo dpkg -i ./*vivaldi-stable*.deb
         rm *vivaldi-stable*.deb
         echo "$program installed"
     else
@@ -211,7 +210,7 @@ change_wallpaper() {
 }
 
 
-check_pack-man
+check_pack_man
 update_packages
 
 echo ""
@@ -220,7 +219,7 @@ running=1
 
 while [ $running -ne 0 ]
 do   
-    check_package-man
+    check_pack_man
 
     echo "What would you like to install?"
     echo "1 - All listed programs"
@@ -245,7 +244,7 @@ do
         6)install_tailscale;;
         7)install_vivaldi;;
         8)./comfy-rocm.sh;;
-        9)update_packages;;
+        9)pack_update;;
         10)running=0;;
         *)echo "Invalid input"
     esac
