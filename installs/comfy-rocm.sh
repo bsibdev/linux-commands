@@ -129,7 +129,7 @@ install_dependencies() {
     done
 
     if [ ${#dependencies_to_install[@]} -gt 0 ]; then
-        sudo "$pack_install" "${dependencies_to_install[@]}" -y
+        sudo $pack_install ${dependencies_to_install[@]} -y
     else
         echo "All dependencies are already installed"
     fi
