@@ -21,7 +21,7 @@ script="$standard_script_directory/$script_name"
 
 
 #save script outputs to log
-$(exec > >(tee -a "$log") 2>&1)
+exec > >(sudo tee -a "$log") 2>&1
 
 #copy script to standard location
 if [ "$script_directory" != "$standard_script_directory" ] ; then
@@ -43,6 +43,8 @@ check_pack_man() {
     elif command -v pacman >/dev/null 2>&1; then
         pack_manager=pacman 
         pack_install="$pack_manager -S"
+    else
+        echo "$script_name: Package manager not found"
     fi
 }
 
@@ -83,7 +85,7 @@ update_packages() {
             last_update=$(grep -E "\[ALPM\] upgraded" "$log_file" | tail -1 | awk '{print $1, $2}')
             ;;
         *)
-            echo "No package manager set for $script_name"
+            echo "$script_name: No package manager set"
             exit 1
     esac
 
@@ -169,8 +171,8 @@ install_rocm() {
     done
 
     if [ ${#libraries_to_install[@]} -gt 0 ]; then
-        sudo "$pack_install" "${libraries_to_install[@]}" -y
-        sudo usermod -aG render,video $SUDO_USER
+        sudo $pack_install ${libraries_to_install[@]} -y
+        sudo usermod -aG render,video $user
 
         echo "Installation complete. The system will reboot in 30 seconds."
         for i in {30..1}; do
@@ -264,8 +266,8 @@ install_comfyui
 
 #set owner to non-root user
 if ls -lR $target_directory | grep root > /dev/null 2>&1; then
-    sudo chown -R $SUDO_USER:$SUDO_USER "$target_directory"
-    echo "Ownership changed to $SUDO_USER"
+    sudo chown -R $user:$user "$target_directory"
+    echo "Ownership changed to $user"
 fi
 #set permissions
 if find "$target_directory" ! -perm 0777 | grep . > /dev/null 2>&1; then
